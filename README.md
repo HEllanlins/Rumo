@@ -1,5 +1,12 @@
 # Rumo — passo a passo
 
+## Atualização 2 (se você já fez o deploy da versão 1)
+1. Supabase → SQL Editor → New query → cole `supabase/migracao-2.sql` → Run.
+2. Login com Google: Supabase → Authentication → Providers → Google → ative e cole o Client ID e o Secret criados no Google Cloud Console (OAuth, tipo Web). Em Authentication → URL Configuration, coloque o endereço do seu site da Vercel em Site URL e em Redirect URLs (com /app e /redefinir no final).
+3. Substitua os arquivos do repositório pelos desta pasta, faça commit e a Vercel publica sozinha.
+
+## Primeira instalação
+
 1. Supabase (supabase.com) → New project. Depois: SQL Editor → New query → cole TODO o conteúdo de `supabase/schema.sql` → Run.
 2. Supabase → Project Settings → API: copie "Project URL" e "anon public key".
 3. (Opcional, para testar rápido) Authentication → Providers → Email → desligue "Confirm email".

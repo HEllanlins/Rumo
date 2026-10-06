@@ -6,6 +6,9 @@ import Auth from './pages/Auth'
 import Dashboard from './pages/Dashboard'
 import Project from './pages/Project'
 import Admin from './pages/Admin'
+import Settings from './pages/Settings'
+import { Reset } from './pages/Auth'
+import { ThemeToggle } from './theme.jsx'
 
 export const Ctx = createContext()
 export const useApp = () => useContext(Ctx)
@@ -14,6 +17,7 @@ export default function App() {
   const [session, setSession] = useState(undefined)
   const [me, setMe] = useState(null)
   const [plans, setPlans] = useState([])
+  const [theme, setTheme] = useState({})
 
   useEffect(() => {
     sb.auth.getSession().then(({ data }) => setSession(data.session))
@@ -27,7 +31,9 @@ export default function App() {
     if (session) {
       const { data } = await sb.from('profiles').select('*').eq('id', session.user.id).single()
       setMe(data)
-    } else setMe(null)
+      const { data: s } = await sb.from('user_settings').select('theme').maybeSingle()
+      setTheme(s?.theme || {})
+    } else { setMe(null); setTheme({}) }
   }
   useEffect(() => { if (session !== undefined) load() }, [session])
 
@@ -35,16 +41,24 @@ export default function App() {
   const plan = plans.find(p => p.id === me?.plan_id)
   const admin = me?.role === 'admin'
   const can = f => admin || (me?.status === 'ativa' && !!plan?.features.includes(f))
-  const priv = el => (session ? el : <Navigate to="/entrar" />)
+  const Shell = ({ children }) => (
+    <div className="bg" style={theme.vars}>
+      <div className="nav"><div className="c row sp"><a href="/app"><b>Rumo</b></a>
+        <div className="row"><a href="/app/config">Personalizar</a><ThemeToggle /><button className="g" onClick={() => sb.auth.signOut()}>Sair</button></div></div></div>
+      {children}
+    </div>)
+  const priv = el => (session ? <Shell>{el}</Shell> : <Navigate to="/entrar" />)
 
   return (
-    <Ctx.Provider value={{ session, me, plans, plan, can, admin, reload: load }}>
+    <Ctx.Provider value={{ theme, setTheme, session, me, plans, plan, can, admin, reload: load }}>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/entrar" element={session ? <Navigate to="/app" /> : <Auth />} />
           <Route path="/app" element={priv(<Dashboard />)} />
           <Route path="/app/:id" element={priv(<Project />)} />
+          <Route path="/app/config" element={priv(<Settings />)} />
+          <Route path="/redefinir" element={<Reset />} />
           <Route path="/restrita" element={priv(admin ? <Admin /> : <Navigate to="/" />)} />
         </Routes>
       </BrowserRouter>

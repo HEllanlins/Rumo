@@ -13,9 +13,7 @@ export default function Dashboard() {
 
   return (
     <div className="c">
-      <div className="row sp"><b>Rumo</b>
-        <div className="row">{admin && <Link to="/restrita" className="btn g">Área restrita</Link>}
-          <button className="g" onClick={() => sb.auth.signOut()}>Sair</button></div></div>
+      <div className="row">{admin && <Link to="/restrita" className="btn g">Área restrita</Link>}</div>
       <p className="mut">{me.email} · plano {plan?.nome || 'não escolhido'} · {admin ? 'administrador' : me.status}</p>
       {!can('projects') ? (
         <div className="card">Sua assinatura ainda não está ativa. Assim que o pagamento for confirmado, os recursos do plano serão liberados.</div>
@@ -25,7 +23,7 @@ export default function Dashboard() {
           <div className="grid" style={{ marginTop: 12 }}>
             {list.map(p => (
               <Link to={`/app/${p.id}`} key={p.id} className="card" style={{ color: 'inherit' }}>
-                <b>{p.nome}</b>
+                <b>{p.nome}</b> <span className="tag">{p.status}</span>
                 {can('progress') && <><div className="bar" style={{ margin: '10px 0 4px' }}><i style={{ width: p.progresso + '%' }} /></div><small className="mut">{p.progresso}% pronto</small></>}
               </Link>
             ))}
