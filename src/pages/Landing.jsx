@@ -3,36 +3,43 @@ import { useApp } from '../App'
 import { FEATURES, brl } from '../supabase'
 import { ThemeToggle } from '../theme.jsx'
 
-const blocos = [
-  ['Gerenciamento de projetos', 'Status, prioridade, prazo, cliente e tags em cada projeto, com uma pasta própria para tudo.'],
-  ['Controle de prompts', 'Marque cada prompt como lançado, não lançado, atrasado ou trocado e copie com um clique.'],
-  ['Acompanhamento de progresso', 'Percentual de conclusão e histórico de mudanças para saber onde parou.'],
-  ['Integração com GitHub', 'Commits, branches, pull requests, issues e releases de repositórios públicos.'],
-  ['Segurança', 'Login com e-mail ou Google. Regras no banco garantem que cada usuário veja só os próprios dados.'],
-  ['Personalização', 'Tema claro ou escuro, presets e cores próprias, apenas na sua área restrita.'],
+const recursos = [
+  ['▦', 'Gerenciamento de projetos', 'Todos os projetos em um só lugar, cada um com capa, status, prazo e prioridade.'],
+  ['◔', 'Acompanhamento', 'Percentual, status e evolução visíveis em cards e no painel geral.'],
+  ['⎇', 'GitHub', 'Commits, branches, pull requests e releases de repositórios públicos, sem sair da plataforma.'],
+  ['❏', 'Organização', 'Prompts, histórico e anotações do projeto centralizados na mesma pasta.'],
+  ['↻', 'Sincronização automática', 'Ao abrir o projeto, os dados do GitHub são atualizados e novos commits viram atividade.'],
+  ['⛨', 'Segurança', 'Login com e-mail ou Google; regras no banco isolam os dados de cada usuário.'],
 ]
+const passos = ['Criar projeto', 'Acompanhar desenvolvimento', 'Conectar GitHub', 'Acompanhar progresso', 'Entregar projeto']
 export default function Landing() {
   const { plans, session } = useApp()
   return (
-    <div className="bg">
+    <div className="bg" style={{ overflow: 'hidden' }}>
       <div className="nav"><div className="c row sp"><b>Rumo</b>
         <div className="row"><ThemeToggle /><Link to={session ? '/app' : '/entrar'} className="btn g">Acesso</Link></div></div></div>
       <div className="c">
-        <section className="hero fade row sp" style={{ alignItems: 'center' }}>
-          <div style={{ flex: '1 1 340px' }}>
-            <h1>Volte ao projeto sem se perder.</h1>
-            <p className="mut" style={{ maxWidth: 520 }}>Prompts, evolução, histórico e commits do GitHub organizados por projeto, em um painel que você instala no celular.</p>
-            <div className="row"><a href="#planos" className="btn">Ver planos</a><a href="#recursos" className="btn g">Conhecer recursos</a></div>
+        <section className="hero2 fade" style={{ position: 'relative' }}>
+          <h1>Seus projetos, prompts e commits.<br />Sempre no rumo certo.</h1>
+          <p className="mut">Pare de se perder quando volta a um projeto. Veja onde parou, o que mudou e quanto falta, em um app que você instala no celular.</p>
+          <div className="row" style={{ justifyContent: 'center' }}><Link to="/entrar" className="btn">Começar agora</Link><a href="#como" className="btn g">Como funciona</a></div>
+          <div className="card mock" aria-hidden="true" style={{ textAlign: 'left' }}>
+            <div className="row" style={{ gap: 6 }}><i className="tag" /><i className="tag" /><i className="tag" /></div>
+            <div className="grid" style={{ marginTop: 12 }}>{[['Ativos', 4], ['Concluídos', 2], ['Progresso médio', '63%']].map(([t, v]) => <div className="card" key={t}><span className="mut">{t}</span><div className="stat">{v}</div></div>)}</div>
+            <div className="bar" style={{ marginTop: 16 }}><i style={{ width: '63%' }} /></div>
           </div>
-          <div className="card float" style={{ flex: '1 1 280px', maxWidth: 380 }} aria-hidden="true">
-            <b>Loja de advocacia</b> <span className="tag">em desenvolvimento</span>
-            <div className="bar" style={{ margin: '14px 0 6px' }}><i style={{ width: '68%' }} /></div><small className="mut">68% pronto · prazo em 12 dias</small>
-            <hr style={{ border: 0, borderTop: '1px solid var(--ln)', margin: '14px 0' }} />
-            <small className="mut">Prompt 14 · <span className="tag ok">lançado</span><br />Prompt 15 · <span className="tag">não lançado</span></small>
-          </div>
+          <div className="card fl float" style={{ left: 0, top: 150 }} aria-hidden="true">⎇ a82f91c · Atualização do dashboard</div>
+          <div className="card fl float d2" style={{ right: 0, top: 110 }} aria-hidden="true">Projeto atualizado para 75%</div>
+          <div className="card fl float d3" style={{ right: 40, top: 300 }} aria-hidden="true">Prompt 14 · lançado</div>
         </section>
-        <section id="recursos" className="sec"><h2>Recursos</h2>
-          <div className="grid">{blocos.map(([t, d]) => <div className="card" key={t}><b>{t}</b><p className="mut">{d}</p></div>)}</div></section>
+        <section className="sec"><div className="grid">
+          <div className="card"><h2>O que é</h2><p className="mut">O Rumo é um painel para organizar projetos de software: prompts, progresso, histórico e atividade do GitHub, tudo junto.</p></div>
+          <div className="card"><h2>Para quem é</h2><p className="mut">Freelancers, desenvolvedores independentes, estudantes e quem constrói apps com ajuda de IA e muitos prompts.</p></div>
+          <div className="card"><h2>Por que usar</h2><p className="mut">Você volta ao projeto depois de dias e sabe onde parou, sem bagunçar o que já funciona.</p></div></div></section>
+        <section className="sec"><h2>Recursos</h2>
+          <div className="grid">{recursos.map(([i, t, d]) => <div className="card" key={t}><span className="ic" aria-hidden="true">{i}</span><b>{t}</b><p className="mut">{d}</p></div>)}</div></section>
+        <section id="como" className="sec"><h2>Como funciona</h2>
+          <div className="grid steps">{passos.map(p => <div className="card" key={p}><b>{p}</b></div>)}</div></section>
         <section id="planos" className="sec"><h2>Planos</h2>
           <div className="grid">{plans.map(p => (
             <div className="card" key={p.id}><b>{p.nome}</b>

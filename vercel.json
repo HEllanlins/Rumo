@@ -1,1 +1,1 @@
-{"rewrites":[{"source":"/((?!sw.js|manifest.webmanifest|icon-.*).*)","destination":"/index.html"}]}
+{"crons":[{"path":"/api/health","schedule":"0 9 */2 * *"}],"rewrites":[{"source":"/((?!api/|sw.js|manifest.webmanifest|offline.html|icon-).*)","destination":"/index.html"}]}

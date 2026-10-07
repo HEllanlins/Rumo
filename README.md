@@ -1,5 +1,12 @@
 # Rumo — passo a passo
 
+## Atualização 3 (fase 2)
+1. Supabase → SQL Editor → New query → cole `supabase/migracao-3.sql` → Run (rode antes a migracao-2.sql, se ainda não rodou).
+2. Substitua os arquivos do repositório pelos desta pasta, faça commit. A Vercel publica sozinha e cria o agendamento (Cron) definido em `vercel.json`.
+3. Confira: abra `https://SEU-SITE.vercel.app/api/health`. Deve aparecer `"ok":true`. Esse endereço roda sozinho a cada 2 dias e faz uma leitura leve no banco, o que evita a pausa por inatividade do plano grátis do Supabase.
+4. Para instalar: Android/Chrome → botão "Instalar app" ou menu → Instalar. iPhone/Safari → Compartilhar → Adicionar à Tela de Início.
+
+
 ## Atualização 2 (se você já fez o deploy da versão 1)
 1. Supabase → SQL Editor → New query → cole `supabase/migracao-2.sql` → Run.
 2. Login com Google: Supabase → Authentication → Providers → Google → ative e cole o Client ID e o Secret criados no Google Cloud Console (OAuth, tipo Web). Em Authentication → URL Configuration, coloque o endereço do seu site da Vercel em Site URL e em Redirect URLs (com /app e /redefinir no final).

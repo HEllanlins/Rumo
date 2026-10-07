@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import Project from './pages/Project'
 import Admin from './pages/Admin'
 import Settings from './pages/Settings'
+import Shell from './Shell'
 import { Reset } from './pages/Auth'
 import { ThemeToggle } from './theme.jsx'
 
@@ -41,13 +42,7 @@ export default function App() {
   const plan = plans.find(p => p.id === me?.plan_id)
   const admin = me?.role === 'admin'
   const can = f => admin || (me?.status === 'ativa' && !!plan?.features.includes(f))
-  const Shell = ({ children }) => (
-    <div className="bg" style={theme.vars}>
-      <div className="nav"><div className="c row sp"><a href="/app"><b>Rumo</b></a>
-        <div className="row"><a href="/app/config">Personalizar</a><ThemeToggle /><button className="g" onClick={() => sb.auth.signOut()}>Sair</button></div></div></div>
-      {children}
-    </div>)
-  const priv = el => (session ? <Shell>{el}</Shell> : <Navigate to="/entrar" />)
+  const priv = el => (session ? <Shell theme={theme}>{el}</Shell> : <Navigate to="/entrar" />)
 
   return (
     <Ctx.Provider value={{ theme, setTheme, session, me, plans, plan, can, admin, reload: load }}>
