@@ -8,13 +8,15 @@ const PSTATUS = ['planejamento', 'em desenvolvimento', 'em revisão', 'pausado',
 const vazio = { nome: '', descricao: '', url: '', repo: '', status: 'planejamento', progresso: 0, capa: '' }
 
 export default function Dashboard() {
-  const { me, plan, can, admin } = useApp()
+  const { me, plan, can, admin, theme, saveUi } = useApp()
+  const cols = theme.ui?.cols || 3
   const [list, setList] = useState(null)
   const [acts, setActs] = useState([])
   const [modal, setModal] = useState(false)
   const [f, setF] = useState(vazio)
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  const [filtro, setFiltro] = useState(null)
   const load = async () => {
     const [a, b] = await Promise.all([sb.from('projects').select('*').order('updated_at', { ascending: false }), sb.from('atividades').select('*').order('created_at', { ascending: false }).limit(6)])
     setList(a.data || []); setActs(b.data || [])
@@ -34,6 +36,10 @@ export default function Dashboard() {
   const conc = L.filter(p => ['concluído', 'entregue'].includes(p.status)).length
   const paus = L.filter(p => p.status === 'pausado').length
   const media = L.length ? Math.round(L.reduce((s, p) => s + p.progresso, 0) / L.length) : 0
+  const vencido = p => p.prazo && new Date(p.prazo + 'T23:59:59') < new Date() && !['concluído', 'entregue', 'cancelado'].includes(p.status)
+  const bate = (p, k) => (k === 'atrasado' ? vencido(p) : p.status === k)
+  const vis = filtro ? L.filter(p => bate(p, filtro)) : L
+  const chips = [...PSTATUS.map(s => [s, s[0].toUpperCase() + s.slice(1)]), ['atrasado', 'Atrasados']]
 
   return (
     <div className="c">
@@ -42,14 +48,21 @@ export default function Dashboard() {
         {can('projects') && <button onClick={() => setModal(true)}>+ Novo projeto</button>}</div>
       {!can('projects') ? <div className="card">Sua assinatura ainda não está ativa. Assim que o pagamento for confirmado, os recursos do plano serão liberados.</div> : <>
         <div className="grid" style={{ margin: '14px 0' }}>
-          {[['Ativos', ativos], ['Concluídos', conc], ['Pausados', paus], ['Progresso médio', media + '%']].map(([t, v]) => <div className="card" key={t}><span className="mut">{t}</span><div className="stat">{list ? v : '–'}</div></div>)}
+          {[['Ativos', ativos, L.length ? ativos / L.length * 100 : 0], ['Concluídos', conc, L.length ? conc / L.length * 100 : 0], ['Pausados', paus, L.length ? paus / L.length * 100 : 0], ['Progresso médio', media + '%', media]].map(([t, v, pct]) => (
+            <div className="card kpi" key={t}><span className="mut">{t}</span><div className="stat">{list ? v : '–'}</div><div className="bar" style={{ marginTop: 10 }}><i style={{ width: pct + '%' }} /></div></div>))}
+        </div>
+        <div className="row" style={{ marginBottom: 14 }}>
+          {chips.map(([k, l]) => <button key={k} className={'g chip' + (filtro === k ? ' on' : '')} onClick={() => setFiltro(filtro === k ? null : k)}>{l} <span className="tag">{L.filter(p => bate(p, k)).length}</span></button>)}
+          <span className="row" style={{ marginLeft: 'auto' }} title="Projetos por linha">{[1, 2, 3, 4].map(n => <button key={n} className={'g' + (cols === n ? ' on' : '')} aria-label={n + ' por linha'} onClick={() => saveUi({ cols: n })}>{n}</button>)}</span>
         </div>
         {list === null && <div className="grid"><div className="sk" /><div className="sk" /><div className="sk" /></div>}
         {list && !list.length && <div className="card" style={{ textAlign: 'center', padding: 36 }}><h3>Nenhum projeto ainda</h3><p className="mut">Crie o primeiro e comece a registrar prompts, evolução e commits.</p><button onClick={() => setModal(true)}>Criar projeto</button></div>}
-        <div className="grid">{L.map(p => (
-          <Link to={`/app/${p.id}`} key={p.id} className="card pc fade"><Cover p={p} />
+        {list && L.length > 0 && !vis.length && <p className="mut">Nenhum projeto neste filtro.</p>}
+        <div className={'pgrid' + (cols === 1 ? ' one' : '')} style={{ '--cols': cols }}>{vis.map(p => (
+          <Link to={`/app/${p.id}`} key={p.id} className="card pc fade"><Cover p={p} h={cols === 1 ? 150 : 110} />
             <div className="row sp" style={{ marginTop: 10 }}><b>{p.nome}</b><span className="tag">{p.status}</span></div>
             <p className="mut clamp">{p.descricao || 'Sem descrição ainda.'}</p>
+            {cols === 1 && <p className="row">{p.prazo && <span className={'tag' + (vencido(p) ? ' bad' : '')}>prazo {new Date(p.prazo + 'T00:00').toLocaleDateString('pt-BR')}</span>}<span className="tag">prioridade {p.prioridade}</span>{p.cliente && <span className="tag">{p.cliente}</span>}{(p.tags || []).map(t => <span className="tag" key={t}>#{t}</span>)}</p>}
             {can('progress') && <><div className="bar"><i style={{ width: p.progresso + '%' }} /></div><small className="mut">{p.progresso}%</small><br /></>}
             <small className="mut">Atualizado {ago(p.updated_at)}{p.gh ? ` · ⎇ ${p.gh.sha} ${p.gh.msg}` : ''}</small></Link>))}</div>
         <h3 style={{ marginTop: 28 }}>Atividade recente</h3>

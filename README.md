@@ -1,5 +1,13 @@
 # Rumo — passo a passo
 
+## Atualização 4 (fase 3)
+1. Supabase → SQL Editor → New query → cole `supabase/migracao-4.sql` → Run (cria o armazenamento de imagens e a tabela de configuração da landing).
+2. Substitua os arquivos do repositório pelos desta pasta e faça commit.
+3. Imagens da landing: entre como admin → Área restrita → "Imagens da landing page".
+4. Capa do projeto: abra o projeto → bloco da capa (enviar do computador, link, capturar da URL ou capa gerada).
+5. Zoom, fonte e projetos por linha: engrenagem ⚙ no topo.
+
+
 ## Atualização 3 (fase 2)
 1. Supabase → SQL Editor → New query → cole `supabase/migracao-3.sql` → Run (rode antes a migracao-2.sql, se ainda não rodou).
 2. Substitua os arquivos do repositório pelos desta pasta, faça commit. A Vercel publica sozinha e cria o agendamento (Cron) definido em `vercel.json`.

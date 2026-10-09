@@ -2,16 +2,17 @@ import { useEffect, useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '../App'
 import { sb } from '../supabase'
-import { ago, dia, parseRepo, logAct } from '../lib.jsx'
+import { ago, dia, parseRepo, logAct, Cover } from '../lib.jsx'
+import ImgPicker from '../Imagem.jsx'
 
-const STATUS = ['não lançado', 'lançado', 'atrasado', 'trocado']
+const STATUS = ['não lançado', 'lançado', 'atrasado', 'trocado', 'em espera', 'aguardando']
 const PSTATUS = ['planejamento', 'em desenvolvimento', 'em revisão', 'pausado', 'concluído', 'entregue', 'cancelado']
 const gh = async u => { const r = await fetch(u); if (!r.ok) throw new Error(r.status); return r }
 
 export default function Project() {
   const { id } = useParams()
   const nav = useNavigate()
-  const { can } = useApp()
+  const { can, session } = useApp()
   const [p, setP] = useState(null)
   const [tab, setTab] = useState('prompts')
   const [prompts, setPrompts] = useState([])
@@ -20,6 +21,8 @@ export default function Project() {
   const [nota, setNota] = useState('')
   const [info, setInfo] = useState(null)
   const [sync, setSync] = useState(null)
+  const [view, setView] = useState(localStorage.getItem('pview') || 'grade')
+  const [sel, setSel] = useState(null)
   const [acts, setActs] = useState([])
   const [erro, setErro] = useState('')
 
@@ -40,6 +43,9 @@ export default function Project() {
     if (patch.status) logAct(id, 'status', `"${p.nome}" agora está ${patch.status}`)
     if ('progresso' in patch) logAct(id, 'progresso', `"${p.nome}" atualizado para ${patch.progresso}%`)
   }
+  const setV = v => { setView(v); localStorage.setItem('pview', v) }
+  const savePrompt = async () => { await sb.from('prompts').update({ titulo: sel.titulo, texto: sel.texto, status: sel.status }).eq('id', sel.id); setSel(null); load() }
+  const delPrompt = async () => { if (confirm('Excluir este prompt?')) { await sb.from('prompts').delete().eq('id', sel.id); setSel(null); load() } }
   const addPrompt = async e => { e.preventDefault(); await sb.from('prompts').insert({ ...pf, project_id: id }); setPf({ titulo: '', texto: '' }); load() }
   const setSt = async (pid, status) => { await sb.from('prompts').update({ status }).eq('id', pid); load() }
   const addEv = async e => { e.preventDefault(); await sb.from('eventos').insert({ texto: nota, project_id: id }); setNota(''); load() }
@@ -66,7 +72,14 @@ export default function Project() {
     <div className="c">
       <Link to="/app">← Projetos</Link>
       <div className="row sp"><h1 style={{ fontSize: '2rem' }}>{p.nome}</h1><button className="g" onClick={del}>Excluir</button></div>
+      <div className="card"><div className="grid" style={{ alignItems: 'start' }}>
+        <div><Cover p={p} h={130} /></div>
+        <ImgPicker pasta={session.user.id} onChange={url => upd({ capa: url })}>
+          <button className="g" disabled={!p.url} title="Usa uma captura da primeira página da URL do projeto" onClick={() => upd({ capa: 'https://image.thum.io/get/width/800/crop/500/' + p.url })}>Capturar da URL do projeto</button>
+          <button className="g" onClick={() => upd({ capa: null })}>Usar capa gerada</button></ImgPicker></div></div>
       <div className="card"><div className="grid">
+        <label>Nome<input defaultValue={p.nome} onBlur={e => e.target.value.trim() && upd({ nome: e.target.value.trim() })} /></label>
+        <label style={{ gridColumn: '1/-1' }}>Descrição<textarea rows={2} defaultValue={p.descricao || ''} onBlur={e => upd({ descricao: e.target.value })} /></label>
         <label>Status<select value={p.status} onChange={e => upd({ status: e.target.value })}>{PSTATUS.map(x => <option key={x}>{x}</option>)}</select></label>
         <label>Prioridade<select value={p.prioridade} onChange={e => upd({ prioridade: e.target.value })}>{['baixa', 'média', 'alta'].map(x => <option key={x}>{x}</option>)}</select></label>
         <label>Prazo<input type="date" value={p.prazo || ''} onChange={e => upd({ prazo: e.target.value || null })} /></label>
@@ -82,13 +95,18 @@ export default function Project() {
           <label><textarea rows={4} placeholder="Cole aqui o texto do prompt" value={pf.texto} onChange={e => setPf({ ...pf, texto: e.target.value })} /></label>
           <button>Salvar prompt</button>
         </form>
-        {prompts.map(x => (
-          <div className="card" key={x.id}>
-            <div className="row sp"><b>{x.titulo}</b>
-              <select style={{ width: 'auto' }} value={x.status} onChange={e => setSt(x.id, e.target.value)}>{STATUS.map(s => <option key={s}>{s}</option>)}</select></div>
-            <pre style={{ whiteSpace: 'pre-wrap', margin: '8px 0 0' }} className="mut">{x.texto}</pre>
-            <button className="g" style={{ marginTop: 8 }} onClick={() => navigator.clipboard.writeText(x.texto || '')}>Copiar</button>
-          </div>))}
+        <div className="row sp" style={{ marginTop: 14 }}><b>{prompts.length} prompts</b>
+          <span className="row">{[['lista', '☰', 'Lista'], ['grade', '▦', 'Grade'], ['grande', '◫', 'Grade grande']].map(([k, i, t]) => <button key={k} title={t} aria-label={t} className={'g' + (view === k ? ' on' : '')} onClick={() => setV(k)}>{i}</button>)}</span></div>
+        {!prompts.length && <div className="card mut">Nenhum prompt ainda. Salve o primeiro acima.</div>}
+        <div className={'pg ' + view}>{prompts.map(x => (
+          <div key={x.id} className="card pi" role="button" tabIndex={0} onClick={() => setSel({ ...x })} onKeyDown={e => e.key === 'Enter' && setSel({ ...x })}>
+            <div className="row sp"><b>{x.titulo}</b><span className={'tag' + (x.status === 'lançado' ? ' ok' : x.status === 'atrasado' ? ' bad' : '')}>{x.status}</span></div>
+            <p className="mut ex">{x.texto}</p></div>))}</div>
+        {sel && <div className="ov" onClick={() => setSel(null)}><div className="card" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+          <input value={sel.titulo} onChange={e => setSel({ ...sel, titulo: e.target.value })} />
+          <label>Status<select value={sel.status} onChange={e => setSel({ ...sel, status: e.target.value })}>{STATUS.map(x => <option key={x}>{x}</option>)}</select></label>
+          <textarea rows={12} value={sel.texto || ''} onChange={e => setSel({ ...sel, texto: e.target.value })} />
+          <div className="row" style={{ marginTop: 10 }}><button onClick={savePrompt}>Salvar</button><button className="g" onClick={() => navigator.clipboard.writeText(sel.texto || '')}>Copiar</button><button className="g" onClick={delPrompt}>Excluir</button><button className="g" onClick={() => setSel(null)}>Fechar</button></div></div></div>}
       </>}
 
       {tab === 'progress' && <div className="card">

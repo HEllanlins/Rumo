@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../App'
 import { FEATURES, brl } from '../supabase'
 import { ThemeToggle } from '../theme.jsx'
+import { Kanban, Chart, Timeline } from '../arte.jsx'
+const slots = [['img1', 'Gerenciamento de projetos', Kanban], ['img2', 'Gráficos e progresso', Chart], ['img3', 'Atividade do GitHub', Timeline]]
 
 const recursos = [
   ['▦', 'Gerenciamento de projetos', 'Todos os projetos em um só lugar, cada um com capa, status, prazo e prioridade.'],
@@ -13,7 +15,7 @@ const recursos = [
 ]
 const passos = ['Criar projeto', 'Acompanhar desenvolvimento', 'Conectar GitHub', 'Acompanhar progresso', 'Entregar projeto']
 export default function Landing() {
-  const { plans, session } = useApp()
+  const { plans, session, site } = useApp()
   return (
     <div className="bg" style={{ overflow: 'hidden' }}>
       <div className="nav"><div className="c row sp"><b>Rumo</b>
@@ -38,6 +40,8 @@ export default function Landing() {
           <div className="card"><h2>Por que usar</h2><p className="mut">Você volta ao projeto depois de dias e sabe onde parou, sem bagunçar o que já funciona.</p></div></div></section>
         <section className="sec"><h2>Recursos</h2>
           <div className="grid">{recursos.map(([i, t, d]) => <div className="card" key={t}><span className="ic" aria-hidden="true">{i}</span><b>{t}</b><p className="mut">{d}</p></div>)}</div></section>
+        <section className="sec"><h2>Veja por dentro</h2>
+          <div className="grid">{slots.map(([k, t, Art]) => <div className="card" key={k}>{site[k] ? <img className="shot" src={site[k]} alt={t} loading="lazy" onError={e => { e.currentTarget.style.display = 'none' }} /> : <Art />}<b>{t}</b></div>)}</div></section>
         <section id="como" className="sec"><h2>Como funciona</h2>
           <div className="grid steps">{passos.map(p => <div className="card" key={p}><b>{p}</b></div>)}</div></section>
         <section id="planos" className="sec"><h2>Planos</h2>

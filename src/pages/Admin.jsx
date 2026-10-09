@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../App'
 import { sb, FEATURES } from '../supabase'
+import ImgPicker from '../Imagem.jsx'
 
 export default function Admin() {
-  const { plans, reload } = useApp()
+  const { plans, reload, site } = useApp()
+  const setImg = async (k, v) => { if (v) await sb.from('site_config').upsert({ key: k, value: v }); else await sb.from('site_config').delete().eq('key', k); reload() }
   const [users, setUsers] = useState([])
   const load = async () => { const { data } = await sb.from('profiles').select('*').order('created_at', { ascending: false }); setUsers(data || []) }
   useEffect(() => { load() }, [])
@@ -18,6 +20,10 @@ export default function Admin() {
     <div className="c">
       <Link to="/app">← Voltar</Link>
       <h1 style={{ fontSize: '2rem' }}>Área restrita</h1>
+      <h3>Imagens da landing page</h3>
+      <div className="grid">{[['img1', 'Gerenciamento de projetos'], ['img2', 'Gráficos e progresso'], ['img3', 'Atividade do GitHub']].map(([k, t]) => (
+        <div className="card" key={k}><b>{t}</b>{site[k] && <img src={site[k]} alt="" className="shot" style={{ marginTop: 8 }} />}
+          <ImgPicker pasta="site" onChange={url => setImg(k, url)}><button className="g" onClick={() => setImg(k, null)}>Voltar à imagem padrão</button></ImgPicker></div>))}</div>
       <h3>Planos</h3>
       <div className="grid">{plans.map(p => (
         <div className="card" key={p.id}><b>{p.nome}</b>
