@@ -12,6 +12,9 @@ export default function Shell({ theme, children }) {
   const [items, setItems] = useState([])
   const [open, setOpen] = useState(false)
   const [inst, setInst] = useState(null)
+  const [msg, setMsg] = useState('')
+  useEffect(() => { let t; const h = e => { setMsg(e.detail); clearTimeout(t); t = setTimeout(() => setMsg(''), 2200) }; addEventListener('toast', h); return () => { removeEventListener('toast', h); clearTimeout(t) } }, [])
+  const ui = theme.ui || {}, L = { on: true, int: 0.35, size: 60, anim: false, ...(ui.lights || {}) }
   useEffect(() => {
     const on = () => setOff(false), no = () => setOff(true), bip = e => { e.preventDefault(); setInst(e) }
     addEventListener('online', on); addEventListener('offline', no); addEventListener('beforeinstallprompt', bip)
@@ -21,7 +24,9 @@ export default function Shell({ theme, children }) {
   const novas = items.filter(i => !i.lida).length
   const abrir = async () => { setOpen(!open); if (!open && novas) { await sb.from('atividades').update({ lida: true }).eq('lida', false); setItems(items.map(i => ({ ...i, lida: true }))) } }
   return (
-    <div className="bg" style={{ ...theme.vars, '--z': (theme.ui?.zoom || 100) / 100, zoom: (theme.ui?.zoom || 100) / 100, fontSize: (theme.ui?.font || 16) + 'px' }} onMouseMove={e => { const c = e.target.closest?.('.card'); if (c) { const r = c.getBoundingClientRect(); c.style.setProperty('--mx', e.clientX - r.left + 'px'); c.style.setProperty('--my', e.clientY - r.top + 'px') } }}>
+    <div className={'bg priv' + (ui.fx === false ? ' nofx' : '')} style={{ ...theme.vars, '--l1': L.tl || 'var(--ac)', '--l2': L.tr || 'var(--ac2)', '--li': L.int, '--ls': L.size + '%', '--z': (theme.ui?.zoom || 100) / 100, zoom: (theme.ui?.zoom || 100) / 100, fontSize: (theme.ui?.font || 16) + 'px' }} onMouseMove={e => { const c = e.target.closest?.('.card'); if (c) { const r = c.getBoundingClientRect(); c.style.setProperty('--mx', e.clientX - r.left + 'px'); c.style.setProperty('--my', e.clientY - r.top + 'px') } }}>
+      {L.on && <div className={'amb' + (L.anim ? ' an' : '')} aria-hidden="true" />}
+      {msg && <div className="toast" role="status">{msg}</div>}
       {off && <div className="off" role="status">Você está offline. Alguns dados podem não carregar.</div>}
       <div className="nav"><div className="c row sp"><Link to="/app"><b>Rumo</b></Link>
         <div className="row">

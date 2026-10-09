@@ -3,13 +3,13 @@
 *{box-sizing:border-box}html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,sans-serif;line-height:1.5;transition:background .3s,color .3s}
 .bg{position:relative;min-height:100vh;background:radial-gradient(60% 40% at 15% 0,color-mix(in srgb,var(--ac) 22%,transparent),transparent),radial-gradient(50% 40% at 90% 10%,color-mix(in srgb,var(--ac2) 18%,transparent),transparent),var(--bg);color:var(--ink)}
-a{color:var(--ac);text-decoration:none}h1{font-size:clamp(2.1rem,6vw,3.6rem);line-height:1.05;font-weight:800;margin:.2em 0;letter-spacing:-.02em}h2{font-size:clamp(1.4rem,3.5vw,2rem);margin:0 0 12px}
+a{color:var(--link,var(--ac));text-decoration:none}h1{font-size:clamp(2.1rem,6vw,3.6rem);line-height:1.05;font-weight:800;margin:.2em 0;letter-spacing:-.02em}h2{font-size:clamp(1.4rem,3.5vw,2rem);margin:0 0 12px}
 .c{max-width:1000px;margin:0 auto;padding:20px}.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.sp{justify-content:space-between}
 .card{background:color-mix(in srgb,var(--card) calc(var(--glass)*100%),transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--ln);border-radius:var(--r);padding:18px;margin:10px 0;box-shadow:var(--sh)}
 .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}.grid .card{margin:0}
 button,.btn{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;border:0;border-radius:10px;padding:10px 18px;font:inherit;font-weight:600;cursor:pointer;display:inline-block;box-shadow:0 0 0 0 transparent}
 button:disabled{opacity:.45;cursor:not-allowed}
-button:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+button:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--sel,var(--ac));outline-offset:2px}
 button.g,.btn.g{background:transparent;color:var(--ink);border:1px solid var(--ln);box-shadow:none}
 input,select,textarea{font:inherit;padding:10px 12px;border:1px solid var(--ln);border-radius:10px;width:100%;background:color-mix(in srgb,var(--card) 80%,transparent);color:var(--ink)}
 input[type=checkbox]{width:auto}input[type=color]{padding:2px;height:40px}label{display:block;margin:8px 0;color:var(--mut);font-size:.92rem}.mut{color:var(--mut)}
@@ -45,5 +45,12 @@ button:active,.btn:active{transform:scale(.97)}.page{animation:pg .28s both}@key
 .chip.on,button.g.on{border-color:var(--ac);color:var(--ac)}.stat{transition:transform .25s}.kpi:hover .stat{transform:scale(1.07);transform-origin:left}
 .shot{width:100%;height:170px;object-fit:cover;border-radius:10px;display:block;margin-bottom:10px;background:var(--ln)}
 .pg{display:grid;gap:12px;margin-top:10px}.pg.lista{grid-template-columns:1fr}.pg.grade{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}.pg.grande{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
-.pi{cursor:pointer;margin:0}.pi:focus-visible{outline:2px solid var(--ac)}.ex{white-space:pre-wrap;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;margin:6px 0 0}.grade .ex{-webkit-line-clamp:3}.grande .ex{-webkit-line-clamp:8}.lista .ex{-webkit-line-clamp:1}
+.pi{cursor:pointer;margin:0}.pi:focus-visible{outline:2px solid var(--sel,var(--ac))}.ex{white-space:pre-wrap;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;margin:6px 0 0}.grade .ex{-webkit-line-clamp:3}.grande .ex{-webkit-line-clamp:8}.lista .ex{-webkit-line-clamp:1}
 .chip{padding:6px 12px}
+/* fase 4 */
+.bg.priv{background:var(--bg)}.priv .page{position:relative;z-index:1}
+.amb{position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse var(--ls,60%) calc(var(--ls,60%)*.8) at 0 0,color-mix(in srgb,var(--l1) calc(var(--li,.35)*100%),transparent),transparent 70%),radial-gradient(ellipse var(--ls,60%) calc(var(--ls,60%)*.8) at 100% 0,color-mix(in srgb,var(--l2) calc(var(--li,.35)*100%),transparent),transparent 70%)}
+.amb.an{animation:breathe 9s ease-in-out infinite alternate}@keyframes breathe{from{opacity:.65}to{opacity:1}}
+.nofx .card:hover{background-image:none;transform:none}.nofx .float{animation:none}
+.toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:99px;z-index:30;animation:fd .2s both}
+.atabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}.atabs button{white-space:nowrap}

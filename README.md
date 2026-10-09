@@ -1,5 +1,12 @@
 # Rumo — passo a passo
 
+## Atualização 5 (fase 4)
+1. Supabase → SQL Editor → New query → cole `supabase/migracao-5.sql` → Run (rode antes as migrações 2, 3 e 4, se ainda não rodou).
+2. Substitua os arquivos do repositório pelos desta pasta e faça commit.
+3. Configurações (engrenagem ⚙): modos de apresentação, combinações de cores com hexadecimal, iluminação ambiental, zoom e fonte.
+4. Área restrita: abas Visão geral, Usuários, Planos, Textos, Imagens, Analytics e Auditoria.
+
+
 ## Atualização 4 (fase 3)
 1. Supabase → SQL Editor → New query → cole `supabase/migracao-4.sql` → Run (cria o armazenamento de imagens e a tabela de configuração da landing).
 2. Substitua os arquivos do repositório pelos desta pasta e faça commit.

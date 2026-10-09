@@ -1,16 +1,27 @@
-import { createContext, useContext, useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { createContext, useContext, useEffect, useState, lazy, Suspense } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { sb } from './supabase'
 import Landing from './pages/Landing'
 import Auth from './pages/Auth'
 import Dashboard from './pages/Dashboard'
-import Project from './pages/Project'
-import Admin from './pages/Admin'
-import Settings from './pages/Settings'
+const Project = lazy(() => import('./pages/Project'))
+const Admin = lazy(() => import('./pages/Admin'))
+const Settings = lazy(() => import('./pages/Settings'))
 import Shell from './Shell'
 import { Reset } from './pages/Auth'
 import { ThemeToggle } from './theme.jsx'
 
+function Track() {
+  const loc = useLocation()
+  useEffect(() => {
+    if (navigator.doNotTrack === '1' || loc.pathname.startsWith('/restrita')) return
+    let sid = sessionStorage.getItem('sid'); if (!sid) { sid = crypto.randomUUID(); sessionStorage.setItem('sid', sid) }
+    let ref = ''; try { ref = document.referrer ? new URL(document.referrer).hostname : '' } catch {}
+    sb.from('pageviews').insert({ path: loc.pathname.replace(/^\/app\/(?!config).+/, '/app/projeto'), ref: ref && ref !== location.hostname ? ref : null,
+      device: matchMedia('(max-width:700px)').matches ? 'celular' : matchMedia('(max-width:1100px)').matches ? 'tablet' : 'desktop', sid })
+  }, [loc.pathname])
+  return null
+}
 export const Ctx = createContext()
 export const useApp = () => useContext(Ctx)
 
@@ -54,6 +65,8 @@ export default function App() {
   return (
     <Ctx.Provider value={{ saveUi, site, theme, setTheme, session, me, plans, plan, can, admin, reload: load }}>
       <BrowserRouter>
+        <Track />
+        <Suspense fallback={<p className="c">Carregando…</p>}>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/entrar" element={session ? <Navigate to="/app" /> : <Auth />} />
@@ -63,6 +76,7 @@ export default function App() {
           <Route path="/redefinir" element={<Reset />} />
           <Route path="/restrita" element={priv(admin ? <Admin /> : <Navigate to="/" />)} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
     </Ctx.Provider>
   )

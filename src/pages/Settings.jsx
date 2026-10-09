@@ -1,38 +1,58 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useApp } from '../App'
 import { sb } from '../supabase'
-import { PRESETS, FIELDS } from '../theme.jsx'
+import { PRESETS, MODES, FIELDS } from '../theme.jsx'
+import { toast } from '../lib.jsx'
+
+const HEX = /^#[0-9a-fA-F]{6}$/
+function Cor({ label, value, onChange }) {
+  const [t, setT] = useState(value)
+  return (
+    <label>{label}<span className="row" style={{ flexWrap: 'nowrap' }}>
+      <input type="color" style={{ width: 56 }} value={value} onChange={e => { setT(e.target.value); onChange(e.target.value) }} aria-label={label} />
+      <input value={t} maxLength={7} aria-label={label + ' em hexadecimal'} onChange={e => { setT(e.target.value); if (HEX.test(e.target.value)) onChange(e.target.value) }} /></span></label>)
+}
 
 export default function Settings() {
-  const { theme, setTheme, session, saveUi } = useApp()
-  const ui = theme.ui || {}
-  const liveUi = (k, v) => setTheme({ ...theme, ui: { ...ui, [k]: v } })
-  const [vars, setVars] = useState(theme.vars || {})
-  const [glass, setGlass] = useState(vars['--glass'] ?? 0.72)
-  const [ok, setOk] = useState('')
-  const live = { ...vars, '--glass': glass }
-  const save = async v => {
-    const t = { ...theme, vars: v }
-    const { error } = await sb.from('user_settings').upsert({ user_id: session.user.id, theme: t })
-    if (!error) { setTheme(t); setOk('Salvo. Vale só para a sua conta.') } else setOk('Erro ao salvar: ' + error.message)
+  const { theme, setTheme, session } = useApp()
+  const ui = theme.ui || {}, vars = theme.vars || {}
+  const L = { on: true, int: 0.35, size: 60, anim: false, ...(ui.lights || {}) }
+  const timer = useRef()
+  const apply = t => {
+    setTheme(t); clearTimeout(timer.current)
+    timer.current = setTimeout(async () => {
+      const { error } = await sb.from('user_settings').upsert({ user_id: session.user.id, theme: t })
+      toast(error ? 'Erro ao salvar: ' + error.message : 'Preferências salvas')
+    }, 700)
   }
-  const pick = n => { setVars(PRESETS[n]); setGlass(0.72); setTheme({ ...theme, vars: { ...PRESETS[n], '--glass': 0.72 } }) }
+  const setVars = v => apply({ ...theme, vars: v })
+  const setUi = p => apply({ ...theme, ui: { ...ui, ...p } })
+  const setL = p => setUi({ lights: { ...L, ...p } })
+  const root = getComputedStyle(document.documentElement)
+  const cor = k => HEX.test(vars[k]) ? vars[k] : HEX.test(root.getPropertyValue(k).trim()) ? root.getPropertyValue(k).trim() : root.getPropertyValue('--ac').trim()
+  const keep = { '--glass': vars['--glass'], '--r': vars['--r'] }
+  const preset = n => PRESETS[n] && setVars({ ...PRESETS[n], ...keep })
+  const modo = n => { const M = MODES[n]; apply({ ...theme, ui: { ...ui, ...M.ui, mode: n }, vars: { ...vars, '--glass': M.glass, '--r': M.r } }) }
+
   return (
     <div className="c fade">
       <h2>Configurações</h2>
-      <p className="mut">Essas cores aparecem somente na sua área restrita. A landing page e o login continuam com o tema padrão.</p>
-      <div className="card"><b>Temas prontos</b><div className="row" style={{ marginTop: 10 }}>{Object.keys(PRESETS).map(n => <button key={n} className="g" onClick={() => pick(n)}>{n}</button>)}</div></div>
-      <div className="card"><b>Cores</b>
-        <div className="grid" style={{ marginTop: 10 }}>{FIELDS.map(([k, l]) => <label key={k}>{l}<input type="color" value={live[k] || '#888888'} onChange={e => { const v = { ...vars, [k]: e.target.value }; setVars(v); setTheme({ ...theme, vars: { ...v, '--glass': glass } }) }} /></label>)}</div>
-        <label>Transparência dos cards ({Math.round(glass * 100)}%)<input type="range" min="0.3" max="1" step="0.02" value={glass} onChange={e => { setGlass(+e.target.value); setTheme({ ...theme, vars: { ...vars, '--glass': +e.target.value } }) }} /></label>
-        <div className="row"><button onClick={() => save(live)}>Salvar personalização</button><button className="g" onClick={() => { setVars({}); setGlass(0.72); save({}) }}>Restaurar padrão</button></div>
-        {ok && <p className="mut">{ok}</p>}
-      </div>
+      <p className="mut">Valem só para a sua conta e para a área restrita. A landing page mantém a identidade visual institucional. As alterações aparecem na hora e são salvas sozinhas.</p>
+      <div className="card"><b>Modo de apresentação</b><div className="row" style={{ marginTop: 10 }}>{Object.keys(MODES).map(n => <button key={n} className={'g' + (ui.mode === n ? ' on' : '')} onClick={() => modo(n)}>{n}</button>)}</div>
+        <label><input type="checkbox" checked={ui.fx !== false} onChange={e => setUi({ fx: e.target.checked })} /> Efeitos decorativos (brilho ao passar o mouse e elementos flutuantes)</label></div>
+      <div className="card"><b>Combinações de cores</b><div className="row" style={{ marginTop: 10 }}>{Object.keys(PRESETS).map(n => <button key={n} className="g" onClick={() => preset(n)}>{n}</button>)}</div>
+        <div className="grid" style={{ marginTop: 10 }}>{FIELDS.map(([k, l]) => <Cor key={k + cor(k)} label={l} value={cor(k)} onChange={v => setVars({ ...vars, [k]: v })} />)}</div>
+        <label>Transparência dos cartões ({Math.round((vars['--glass'] ?? 0.72) * 100)}%)<input type="range" min="0.3" max="1" step="0.02" value={vars['--glass'] ?? 0.72} onChange={e => setVars({ ...vars, '--glass': +e.target.value })} /></label></div>
+      <div className="card"><b>Iluminação ambiental</b>
+        <label><input type="checkbox" checked={L.on} onChange={e => setL({ on: e.target.checked })} /> Ativar luzes de fundo</label>
+        {L.on && <><div className="grid"><Cor label="Luz no canto superior esquerdo" value={L.tl || cor('--ac')} onChange={v => setL({ tl: v })} /><Cor label="Luz no canto superior direito" value={L.tr || cor('--ac2')} onChange={v => setL({ tr: v })} /></div>
+          <label>Intensidade ({Math.round(L.int * 100)}%)<input type="range" min="0.05" max="0.8" step="0.05" value={L.int} onChange={e => setL({ int: +e.target.value })} /></label>
+          <label>Extensão e dispersão ({L.size}%)<input type="range" min="30" max="100" step="5" value={L.size} onChange={e => setL({ size: +e.target.value })} /></label>
+          <label><input type="checkbox" checked={L.anim} onChange={e => setL({ anim: e.target.checked })} /> Iluminação animada (respiração suave)</label></>}</div>
       <div className="card"><b>Exibição</b>
-        <label>Zoom da tela ({ui.zoom || 100}%)<input type="range" min="70" max="120" step="5" value={ui.zoom || 100} onChange={e => liveUi('zoom', +e.target.value)} onPointerUp={e => saveUi({ zoom: +e.target.value })} onKeyUp={e => saveUi({ zoom: +e.target.value })} /></label>
-        <label>Tamanho da fonte ({ui.font || 16}px)<input type="range" min="12" max="20" value={ui.font || 16} onChange={e => liveUi('font', +e.target.value)} onPointerUp={e => saveUi({ font: +e.target.value })} onKeyUp={e => saveUi({ font: +e.target.value })} /></label>
-        <label>Projetos por linha<select value={ui.cols || 3} onChange={e => saveUi({ cols: +e.target.value })}>{[1, 2, 3, 4].map(n => <option key={n}>{n}</option>)}</select></label>
-        <button className="g" onClick={() => saveUi({ zoom: 100, font: 16, cols: 3 })}>Restaurar exibição</button></div>
-    </div>
-  )
+        <label>Zoom da tela ({ui.zoom || 100}%)<input type="range" min="70" max="120" step="5" value={ui.zoom || 100} onChange={e => setUi({ zoom: +e.target.value })} /></label>
+        <label>Tamanho da fonte ({ui.font || 16}px)<input type="range" min="12" max="20" value={ui.font || 16} onChange={e => setUi({ font: +e.target.value })} /></label>
+        <label>Projetos por linha<select value={ui.cols || 3} onChange={e => setUi({ cols: +e.target.value })}>{[1, 2, 3, 4].map(n => <option key={n}>{n}</option>)}</select></label></div>
+      <button className="g" onClick={() => apply({})}>Restaurar tudo para o padrão</button>
+    </div>)
 }

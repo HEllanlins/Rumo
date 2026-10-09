@@ -22,3 +22,5 @@ export async function subir(file, pasta) {
   if (error) throw error
   return sb.storage.from('imagens').getPublicUrl(nome).data.publicUrl
 }
+
+export const toast = m => dispatchEvent(new CustomEvent("toast", { detail: m }))

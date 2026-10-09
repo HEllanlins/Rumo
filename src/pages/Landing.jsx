@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../App'
 import { FEATURES, brl } from '../supabase'
@@ -16,15 +17,19 @@ const recursos = [
 const passos = ['Criar projeto', 'Acompanhar desenvolvimento', 'Conectar GitHub', 'Acompanhar progresso', 'Entregar projeto']
 export default function Landing() {
   const { plans, session, site } = useApp()
+  useEffect(() => {
+    if (site.meta_titulo) document.title = site.meta_titulo
+    if (site.meta_desc) { let m = document.querySelector('meta[name=description]'); if (!m) { m = document.createElement('meta'); m.name = 'description'; document.head.appendChild(m) } m.content = site.meta_desc }
+  }, [site])
   return (
     <div className="bg" style={{ overflow: 'hidden' }}>
       <div className="nav"><div className="c row sp"><b>Rumo</b>
         <div className="row"><ThemeToggle /><Link to={session ? '/app' : '/entrar'} className="btn g">Acesso</Link></div></div></div>
       <div className="c">
         <section className="hero2 fade" style={{ position: 'relative' }}>
-          <h1>Seus projetos, prompts e commits.<br />Sempre no rumo certo.</h1>
-          <p className="mut">Pare de se perder quando volta a um projeto. Veja onde parou, o que mudou e quanto falta, em um app que você instala no celular.</p>
-          <div className="row" style={{ justifyContent: 'center' }}><Link to="/entrar" className="btn">Começar agora</Link><a href="#como" className="btn g">Como funciona</a></div>
+          <h1>{site.txt_titulo || 'Seus projetos, prompts e commits. Sempre no rumo certo.'}</h1>
+          <p className="mut">{site.txt_sub || 'Pare de se perder quando volta a um projeto. Veja onde parou, o que mudou e quanto falta, em um app que você instala no celular.'}</p>
+          <div className="row" style={{ justifyContent: 'center' }}><Link to="/entrar" className="btn">{site.txt_cta || 'Começar agora'}</Link><a href="#como" className="btn g">Como funciona</a></div>
           <div className="card mock" aria-hidden="true" style={{ textAlign: 'left' }}>
             <div className="row" style={{ gap: 6 }}><i className="tag" /><i className="tag" /><i className="tag" /></div>
             <div className="grid" style={{ marginTop: 12 }}>{[['Ativos', 4], ['Concluídos', 2], ['Progresso médio', '63%']].map(([t, v]) => <div className="card" key={t}><span className="mut">{t}</span><div className="stat">{v}</div></div>)}</div>
@@ -52,6 +57,6 @@ export default function Landing() {
               <Link className="btn" to={`/entrar?plano=${p.id}`}>Assinar {p.nome}</Link></div>))}</div></section>
         <section className="sec card" style={{ textAlign: 'center', padding: 36 }}><h2>Comece a organizar seus projetos</h2><Link className="btn" to="/entrar">Criar conta</Link></section>
       </div>
-      <footer className="mut">Rumo · <Link to="/restrita">Área restrita</Link></footer>
+      <footer className="mut">{site.txt_rodape || 'Rumo'} · <Link to="/restrita">Área restrita</Link></footer>
     </div>)
 }

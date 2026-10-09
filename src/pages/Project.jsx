@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '../App'
 import { sb } from '../supabase'
-import { ago, dia, parseRepo, logAct, Cover } from '../lib.jsx'
+import { ago, dia, parseRepo, logAct, Cover, toast } from '../lib.jsx'
 import ImgPicker from '../Imagem.jsx'
 
 const STATUS = ['não lançado', 'lançado', 'atrasado', 'trocado', 'em espera', 'aguardando']
@@ -23,6 +23,10 @@ export default function Project() {
   const [sync, setSync] = useState(null)
   const [view, setView] = useState(localStorage.getItem('pview') || 'grade')
   const [sel, setSel] = useState(null)
+  const [q, setQ] = useState('')
+  const [fs, setFs] = useState('')
+  const [ord, setOrd] = useState('recentes')
+  const [lim, setLim] = useState(24)
   const [acts, setActs] = useState([])
   const [erro, setErro] = useState('')
 
@@ -43,9 +47,12 @@ export default function Project() {
     if (patch.status) logAct(id, 'status', `"${p.nome}" agora está ${patch.status}`)
     if ('progresso' in patch) logAct(id, 'progresso', `"${p.nome}" atualizado para ${patch.progresso}%`)
   }
+  const vp = prompts.filter(x => (!fs || x.status === fs) && (!q || (x.titulo + ' ' + (x.texto || '')).toLowerCase().includes(q.toLowerCase())))
+    .sort((a, b) => (!!b.favorito - !!a.favorito) || (ord === 'nome' ? a.titulo.localeCompare(b.titulo) : new Date(b.created_at) - new Date(a.created_at)))
+  const fav = async x => { await sb.from('prompts').update({ favorito: !x.favorito }).eq('id', x.id); load() }
   const setV = v => { setView(v); localStorage.setItem('pview', v) }
-  const savePrompt = async () => { await sb.from('prompts').update({ titulo: sel.titulo, texto: sel.texto, status: sel.status }).eq('id', sel.id); setSel(null); load() }
-  const delPrompt = async () => { if (confirm('Excluir este prompt?')) { await sb.from('prompts').delete().eq('id', sel.id); setSel(null); load() } }
+  const savePrompt = async () => { await sb.from('prompts').update({ titulo: sel.titulo, texto: sel.texto, status: sel.status }).eq('id', sel.id); setSel(null); load(); toast('Prompt salvo') }
+  const delPrompt = async () => { if (confirm('Excluir este prompt?')) { await sb.from('prompts').delete().eq('id', sel.id); setSel(null); load(); toast('Prompt excluído') } }
   const addPrompt = async e => { e.preventDefault(); await sb.from('prompts').insert({ ...pf, project_id: id }); setPf({ titulo: '', texto: '' }); load() }
   const setSt = async (pid, status) => { await sb.from('prompts').update({ status }).eq('id', pid); load() }
   const addEv = async e => { e.preventDefault(); await sb.from('eventos').insert({ texto: nota, project_id: id }); setNota(''); load() }
@@ -95,18 +102,23 @@ export default function Project() {
           <label><textarea rows={4} placeholder="Cole aqui o texto do prompt" value={pf.texto} onChange={e => setPf({ ...pf, texto: e.target.value })} /></label>
           <button>Salvar prompt</button>
         </form>
-        <div className="row sp" style={{ marginTop: 14 }}><b>{prompts.length} prompts</b>
+        <div className="row sp" style={{ marginTop: 14 }}><div className="row" style={{ flex: 1 }}><input style={{ maxWidth: 260 }} placeholder="Buscar por título ou conteúdo" aria-label="Buscar prompts" value={q} onChange={e => { setQ(e.target.value); setLim(24) }} />
+            <select style={{ width: 'auto' }} aria-label="Filtrar por status" value={fs} onChange={e => { setFs(e.target.value); setLim(24) }}><option value="">Todos os status</option>{STATUS.map(x => <option key={x}>{x}</option>)}</select>
+            <select style={{ width: 'auto' }} aria-label="Ordenar" value={ord} onChange={e => setOrd(e.target.value)}><option value="recentes">Mais recentes</option><option value="nome">Nome (A–Z)</option></select>
+            <small className="mut">{vp.length} de {prompts.length}</small></div>
           <span className="row">{[['lista', '☰', 'Lista'], ['grade', '▦', 'Grade'], ['grande', '◫', 'Grade grande']].map(([k, i, t]) => <button key={k} title={t} aria-label={t} className={'g' + (view === k ? ' on' : '')} onClick={() => setV(k)}>{i}</button>)}</span></div>
         {!prompts.length && <div className="card mut">Nenhum prompt ainda. Salve o primeiro acima.</div>}
-        <div className={'pg ' + view}>{prompts.map(x => (
+        <div className={'pg ' + view}>{vp.slice(0, lim).map(x => (
           <div key={x.id} className="card pi" role="button" tabIndex={0} onClick={() => setSel({ ...x })} onKeyDown={e => e.key === 'Enter' && setSel({ ...x })}>
-            <div className="row sp"><b>{x.titulo}</b><span className={'tag' + (x.status === 'lançado' ? ' ok' : x.status === 'atrasado' ? ' bad' : '')}>{x.status}</span></div>
+            <div className="row sp"><b>{x.favorito ? '★ ' : ''}{x.titulo}</b><span className={'tag' + (x.status === 'lançado' ? ' ok' : x.status === 'atrasado' ? ' bad' : '')}>{x.status}</span></div>
             <p className="mut ex">{x.texto}</p></div>))}</div>
+        {vp.length > lim && <button className="g" style={{ marginTop: 12 }} onClick={() => setLim(lim + 24)}>Carregar mais ({vp.length - lim})</button>}
+        {!vp.length && prompts.length > 0 && <div className="card mut">Nenhum prompt encontrado com esses filtros.</div>}
         {sel && <div className="ov" onClick={() => setSel(null)}><div className="card" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
           <input value={sel.titulo} onChange={e => setSel({ ...sel, titulo: e.target.value })} />
           <label>Status<select value={sel.status} onChange={e => setSel({ ...sel, status: e.target.value })}>{STATUS.map(x => <option key={x}>{x}</option>)}</select></label>
           <textarea rows={12} value={sel.texto || ''} onChange={e => setSel({ ...sel, texto: e.target.value })} />
-          <div className="row" style={{ marginTop: 10 }}><button onClick={savePrompt}>Salvar</button><button className="g" onClick={() => navigator.clipboard.writeText(sel.texto || '')}>Copiar</button><button className="g" onClick={delPrompt}>Excluir</button><button className="g" onClick={() => setSel(null)}>Fechar</button></div></div></div>}
+          <div className="row" style={{ marginTop: 10 }}><button onClick={savePrompt}>Salvar</button><button className="g" onClick={() => navigator.clipboard.writeText(sel.texto || '').then(() => toast('Prompt copiado'))}>Copiar</button><button className="g" onClick={() => { fav(sel); setSel({ ...sel, favorito: !sel.favorito }) }}>{sel.favorito ? '★ Desafixar' : '☆ Fixar'}</button><button className="g" onClick={delPrompt}>Excluir</button><button className="g" onClick={() => setSel(null)}>Fechar</button></div></div></div>}
       </>}
 
       {tab === 'progress' && <div className="card">
