@@ -1,0 +1,3 @@
+export const LABEL = { pendente: 'Pendente de análise', contato: 'Aguardando contato', aguardando_pagamento: 'Aguardando pagamento', pagamento_confirmado: 'Pagamento confirmado', ativa: 'Ativa', recusada: 'Recusada', cancelada: 'Cancelada' }
+export const NEXT = { pendente: ['contato', 'aguardando_pagamento', 'recusada', 'cancelada'], contato: ['aguardando_pagamento', 'recusada', 'cancelada'], aguardando_pagamento: ['pagamento_confirmado', 'recusada', 'cancelada'], pagamento_confirmado: ['ativa', 'cancelada'] }
+export const ACAO = { contato: 'Marcar como analisada / contato registrado', aguardando_pagamento: 'Aguardando Pix', pagamento_confirmado: 'Confirmar pagamento Pix (manual)', ativa: 'Ativar assinatura', recusada: 'Recusar', cancelada: 'Cancelar' }

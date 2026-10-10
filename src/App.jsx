@@ -7,7 +7,10 @@ import Dashboard from './pages/Dashboard'
 const Project = lazy(() => import('./pages/Project'))
 const Admin = lazy(() => import('./pages/Admin'))
 const Settings = lazy(() => import('./pages/Settings'))
+const Biblioteca = lazy(() => import('./pages/Biblioteca'))
+const Assinatura = lazy(() => import('./pages/Assinatura'))
 import Shell from './Shell'
+import Splash from './Splash'
 import { Reset } from './pages/Auth'
 import { ThemeToggle } from './theme.jsx'
 
@@ -31,6 +34,18 @@ export default function App() {
   const [plans, setPlans] = useState([])
   const [theme, setTheme] = useState({})
   const [site, setSite] = useState({})
+  const [boot, setBoot] = useState(() => location.pathname === '/' && !sessionStorage.getItem('boot'))
+  const [fonts, setFonts] = useState(false)
+  const [loaded, setLoaded] = useState(document.readyState === 'complete')
+  const [bootErr, setBootErr] = useState(false)
+  const prog = ((fonts ? 1 : 0) + (loaded ? 1 : 0) + (session !== undefined ? 1 : 0)) / 3
+  useEffect(() => {
+    if (!boot) return
+    document.fonts.ready.then(() => setFonts(true))
+    if (!loaded) addEventListener('load', () => setLoaded(true), { once: true })
+    const t = setTimeout(() => setBootErr(true), 15000); return () => clearTimeout(t)
+  }, [])
+  useEffect(() => { if (boot && prog === 1) { const t = setTimeout(() => { setBoot(false); sessionStorage.setItem('boot', '1') }, 350); return () => clearTimeout(t) } }, [prog])
 
   useEffect(() => {
     sb.auth.getSession().then(({ data }) => setSession(data.session))
@@ -52,6 +67,7 @@ export default function App() {
   }
   useEffect(() => { if (session !== undefined) load() }, [session])
 
+  if (boot) return <Splash p={prog} erro={bootErr && prog < 1} />
   if (session === undefined || (session && !me)) return <p className="c">Carregando…</p>
   const plan = plans.find(p => p.id === me?.plan_id)
   const admin = me?.role === 'admin'
@@ -72,6 +88,8 @@ export default function App() {
           <Route path="/entrar" element={session ? <Navigate to="/app" /> : <Auth />} />
           <Route path="/app" element={priv(<Dashboard />)} />
           <Route path="/app/:id" element={priv(<Project />)} />
+          <Route path="/app/prompts" element={priv(<Biblioteca />)} />
+          <Route path="/app/assinatura" element={priv(<Assinatura />)} />
           <Route path="/app/config" element={priv(<Settings />)} />
           <Route path="/redefinir" element={<Reset />} />
           <Route path="/restrita" element={priv(admin ? <Admin /> : <Navigate to="/" />)} />

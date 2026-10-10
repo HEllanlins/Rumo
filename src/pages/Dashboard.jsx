@@ -46,7 +46,7 @@ export default function Dashboard() {
       <div className="row sp"><div><h2 style={{ margin: 0 }}>Olá{me.nome ? `, ${me.nome.split(' ')[0]}` : ''}</h2>
         <small className="mut">Plano {plan?.nome || 'não escolhido'} · {admin ? 'administrador' : me.status}</small></div>
         {can('projects') && <button onClick={() => setModal(true)}>+ Novo projeto</button>}</div>
-      {!can('projects') ? <div className="card">Sua assinatura ainda não está ativa. Assim que o pagamento for confirmado, os recursos do plano serão liberados.</div> : <>
+      {!can('projects') ? <div className="card">Sua assinatura ainda não está ativa. <Link to="/app/assinatura">Solicite um plano</Link>: o pagamento é combinado por Pix com o administrador e os recursos são liberados após a confirmação.</div> : <>
         <div className="grid" style={{ margin: '14px 0' }}>
           {[['Ativos', ativos, L.length ? ativos / L.length * 100 : 0], ['Concluídos', conc, L.length ? conc / L.length * 100 : 0], ['Pausados', paus, L.length ? paus / L.length * 100 : 0], ['Progresso médio', media + '%', media]].map(([t, v, pct]) => (
             <div className="card kpi" key={t}><span className="mut">{t}</span><div className="stat">{list ? v : '–'}</div><div className="bar" style={{ marginTop: 10 }}><i style={{ width: pct + '%' }} /></div></div>))}

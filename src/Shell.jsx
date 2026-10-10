@@ -21,6 +21,8 @@ export default function Shell({ theme, children }) {
     return () => { removeEventListener('online', on); removeEventListener('offline', no); removeEventListener('beforeinstallprompt', bip) }
   }, [])
   useEffect(() => { setOpen(false); sb.from('atividades').select('*').order('created_at', { ascending: false }).limit(8).then(({ data }) => setItems(data || [])) }, [loc.pathname])
+  const [pend, setPend] = useState(0)
+  useEffect(() => { if (!admin) return; const f = () => sb.from('notificacoes_admin').select('id', { count: 'exact', head: true }).eq('lida', false).then(({ count }) => setPend(count || 0)); f(); const t = setInterval(f, 30000); return () => clearInterval(t) }, [admin, loc.pathname])
   const novas = items.filter(i => !i.lida).length
   const abrir = async () => { setOpen(!open); if (!open && novas) { await sb.from('atividades').update({ lida: true }).eq('lida', false); setItems(items.map(i => ({ ...i, lida: true }))) } }
   return (
@@ -28,14 +30,14 @@ export default function Shell({ theme, children }) {
       {L.on && <div className={'amb' + (L.anim ? ' an' : '')} aria-hidden="true" />}
       {msg && <div className="toast" role="status">{msg}</div>}
       {off && <div className="off" role="status">Você está offline. Alguns dados podem não carregar.</div>}
-      <div className="nav"><div className="c row sp"><Link to="/app"><b>Rumo</b></Link>
+      <div className="nav"><div className="c row sp"><Link to="/app"><span className="row" style={{ gap: 8, flexWrap: 'nowrap' }}><img src="/favicon.svg" alt="" width="28" height="28" /><b>Rumo</b></span></Link>
         <div className="row">
-          <span className="row topl"><Link to="/app">Projetos</Link>{admin && <Link to="/restrita">Admin</Link>}</span>
+          <span className="row topl"><Link to="/app">Projetos</Link><Link to="/app/prompts">Biblioteca</Link><Link to="/app/assinatura">Assinatura</Link>{admin && <Link to="/restrita">Admin{pend > 0 && <span className="badge" style={{ position: 'static', marginLeft: 6 }}>{pend}</span>}</Link>}</span>
           {inst && <button className="g" onClick={() => { inst.prompt(); setInst(null) }}>Instalar app</button>}
           <span className="rel"><button className="g" onClick={abrir} aria-label="Notificações" aria-expanded={open}>🔔{novas > 0 && <span className="badge">{novas}</span>}</button>
             {open && <div className="card dd">{items.length ? items.map(i => <div key={i.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--ln)' }}>{i.texto}<br /><small className="mut">{ago(i.created_at)}</small></div>) : <span className="mut">Nenhuma notificação ainda.</span>}</div>}</span>
           <ThemeToggle /><Link to="/app/config" className="btn g" aria-label="Configurações" title="Configurações">⚙</Link><button className="g" onClick={() => sb.auth.signOut()}>Sair</button></div></div></div>
       <main key={loc.pathname} className="page">{children}</main>
-      <nav className="bottom" aria-label="Navegação"><Link to="/app">Projetos</Link><Link to="/app/config">Configurações</Link>{admin && <Link to="/restrita">Admin</Link>}</nav>
+      <nav className="bottom" aria-label="Navegação"><Link to="/app">Projetos</Link><Link to="/app/prompts">Prompts</Link><Link to="/app/assinatura">Plano</Link><Link to="/app/config">Configurações</Link>{admin && <Link to="/restrita">Admin{pend > 0 && <span className="badge" style={{ position: 'static', marginLeft: 6 }}>{pend}</span>}</Link>}</nav>
     </div>)
 }

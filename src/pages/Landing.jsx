@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../App'
 import { FEATURES, brl } from '../supabase'
@@ -17,16 +17,23 @@ const recursos = [
 const passos = ['Criar projeto', 'Acompanhar desenvolvimento', 'Conectar GitHub', 'Acompanhar progresso', 'Entregar projeto']
 export default function Landing() {
   const { plans, session, site } = useApp()
+  const raf = useRef()
+  const mover = e => {
+    if (e.pointerType !== 'mouse' || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const el = e.currentTarget, r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5
+    cancelAnimationFrame(raf.current); raf.current = requestAnimationFrame(() => { el.style.setProperty('--rx', x.toFixed(3)); el.style.setProperty('--ry', y.toFixed(3)) })
+  }
   useEffect(() => {
     if (site.meta_titulo) document.title = site.meta_titulo
     if (site.meta_desc) { let m = document.querySelector('meta[name=description]'); if (!m) { m = document.createElement('meta'); m.name = 'description'; document.head.appendChild(m) } m.content = site.meta_desc }
   }, [site])
   return (
     <div className="bg" style={{ overflow: 'hidden' }}>
-      <div className="nav"><div className="c row sp"><b>Rumo</b>
+      <div className="nav"><div className="c row sp"><span className="row" style={{ gap: 8, flexWrap: 'nowrap' }}><img src="/favicon.svg" alt="" width="28" height="28" /><b>Rumo</b></span>
         <div className="row"><ThemeToggle /><Link to={session ? '/app' : '/entrar'} className="btn g">Acesso</Link></div></div></div>
       <div className="c">
-        <section className="hero2 fade" style={{ position: 'relative' }}>
+        <section className="hero2 fade" style={{ position: 'relative' }} onPointerMove={mover}>
+          <i className="orb" style={{ width: 280, height: 280, left: -60, top: 20, background: 'var(--ac)' }} aria-hidden="true" /><i className="orb" style={{ width: 240, height: 240, right: -40, top: 120, background: 'var(--ac2)', animationDelay: '-4s' }} aria-hidden="true" />
           <h1>{site.txt_titulo || 'Seus projetos, prompts e commits. Sempre no rumo certo.'}</h1>
           <p className="mut">{site.txt_sub || 'Pare de se perder quando volta a um projeto. Veja onde parou, o que mudou e quanto falta, em um app que você instala no celular.'}</p>
           <div className="row" style={{ justifyContent: 'center' }}><Link to="/entrar" className="btn">{site.txt_cta || 'Começar agora'}</Link><a href="#como" className="btn g">Como funciona</a></div>

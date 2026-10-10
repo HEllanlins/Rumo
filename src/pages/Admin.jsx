@@ -4,18 +4,20 @@ import { useApp } from '../App'
 import { sb, FEATURES } from '../supabase'
 import ImgPicker from '../Imagem.jsx'
 import { ago, toast } from '../lib.jsx'
+import { LABEL, NEXT, ACAO } from '../solic.js'
 
 const TXT = [['txt_titulo', 'Título principal da landing', 140], ['txt_sub', 'Subtítulo da landing', 300], ['txt_cta', 'Texto do botão principal', 40], ['txt_rodape', 'Texto do rodapé', 80], ['meta_titulo', 'Título da página (SEO)', 70], ['meta_desc', 'Descrição da página (SEO)', 160]]
 const SLOTS = [['img1', 'Gerenciamento de projetos'], ['img2', 'Gráficos e progresso'], ['img3', 'Atividade do GitHub']]
-const TABS = [['geral', 'Visão geral'], ['users', 'Usuários'], ['planos', 'Planos'], ['conteudo', 'Textos'], ['imagens', 'Imagens'], ['analytics', 'Analytics'], ['audit', 'Auditoria']]
+const TABS = [['geral', 'Visão geral'], ['users', 'Usuários'], ['solic', 'Solicitações'], ['planos', 'Planos'], ['conteudo', 'Textos'], ['imagens', 'Imagens'], ['analytics', 'Analytics'], ['audit', 'Auditoria']]
 
 function Geral() {
   const [s, setS] = useState(null); const [err, setErr] = useState('')
   useEffect(() => { sb.rpc('admin_stats').then(({ data, error }) => error ? setErr('Rode a migracao-5.sql no Supabase. ' + error.message) : setS(data)) }, [])
   if (err) return <p role="alert" className="tag bad">{err}</p>
   if (!s) return <div className="grid"><div className="sk" /><div className="sk" /><div className="sk" /></div>
-  const k = [['Usuários', s.usuarios], ['Assinaturas ativas', s.ativos], ['Pendentes', s.pendentes], ['Novos (7 dias)', s.novos7d], ['Projetos', s.projetos], ['Prompts', s.prompts]]
+  const k = [['Usuários', s.usuarios], ['Assinaturas ativas', s.ativos], ['Pendentes', s.pendentes], ['Novos (7 dias)', s.novos7d], ['Projetos', s.projetos], ['Prompts', s.prompts], ['Solicitações abertas', s.solicitacoes_abertas]]
   return <><div className="grid">{k.map(([t, v]) => <div className="card kpi" key={t}><span className="mut">{t}</span><div className="stat">{v}</div></div>)}</div>
+    <p className="row">{Object.entries(s.por_plano || {}).map(([k, n]) => <span className="tag" key={k}>{k}: {n}</span>)}</p>
     <p className="mut">Os números de projetos e prompts são totais. O painel não exibe o conteúdo privado dos clientes.</p></>
 }
 function Users({ plans }) {
@@ -38,7 +40,8 @@ function Planos({ plans, reload }) {
   const set = async (id, patch) => { const { error } = await sb.from('plans').update(patch).eq('id', id); toast(error ? error.message : 'Plano atualizado'); reload() }
   const tog = (p, f) => set(p.id, { features: p.features.includes(f) ? p.features.filter(x => x !== f) : [...p.features, f] })
   return <div className="grid">{plans.map(p => <div className="card" key={p.id}><b>{p.nome}</b>
-    <label>Valor mensal (R$)<input type="number" min="0" step="0.01" defaultValue={p.preco} onBlur={e => set(p.id, { preco: +e.target.value })} /></label>
+    <label>Descrição<textarea rows={2} defaultValue={p.descricao || ''} onBlur={e => set(p.id, { descricao: e.target.value })} /></label>
+    <label>Valor (R$)<input type="number" min="0" step="0.01" defaultValue={p.preco} onBlur={e => set(p.id, { preco: +e.target.value })} /></label>
     {Object.entries(FEATURES).map(([f, l]) => <label key={f}><input type="checkbox" checked={p.features.includes(f)} onChange={() => tog(p, f)} /> {l}</label>)}</div>)}</div>
 }
 function Conteudo({ site, reload }) {
@@ -89,6 +92,44 @@ function Audit() {
   return !l.length ? <div className="card mut">Nenhuma ação registrada ainda.</div> : <div style={{ overflowX: 'auto' }}><table><thead><tr><th>Quando</th><th>Ação</th><th>Alvo</th></tr></thead><tbody>{l.map(x => <tr key={x.id}><td>{ago(x.created_at)}</td><td>{x.acao}</td><td>{x.alvo}</td></tr>)}</tbody></table></div>
 }
 
+function Solic() {
+  const [rows, setRows] = useState(null); const [notes, setNotes] = useState([]); const [open, setOpen] = useState(null)
+  const [hist, setHist] = useState({ ev: [], nt: [] }); const [nota, setNota] = useState('')
+  const SEL = '*, profiles(nome,email), plans(nome)'
+  const load = async () => {
+    const [a, b] = await Promise.all([sb.from('solicitacoes').select(SEL).order('created_at', { ascending: false }).limit(100), sb.from('notificacoes_admin').select('*').order('created_at', { ascending: false }).limit(30)])
+    setRows(a.data || []); setNotes(b.data || [])
+  }
+  useEffect(() => { load(); const t = setInterval(load, 30000); return () => clearInterval(t) }, [])
+  const abrir = async s => { setOpen(s); setNota(''); const [e, n] = await Promise.all([sb.from('solicitacao_eventos').select('*').eq('solicitacao_id', s.id).order('created_at'), sb.from('solicitacao_notas').select('*').eq('solicitacao_id', s.id).order('created_at')]); setHist({ ev: e.data || [], nt: n.data || [] }) }
+  const marcar = async (n, lida) => { await sb.from('notificacoes_admin').update({ lida }).eq('id', n.id); load() }
+  const agir = async est => {
+    if (['pagamento_confirmado', 'ativa', 'recusada', 'cancelada'].includes(est) && !confirm(`Confirmar: ${LABEL[est]}?` + (est === 'pagamento_confirmado' ? ' Isto registra a confirmação manual do Pix feita por você.' : ''))) return
+    const { error } = await sb.rpc('atualizar_solicitacao', { p_id: open.id, p_estado: est, p_nota: nota || null })
+    toast(error ? error.message : 'Solicitação atualizada'); await load()
+    if (!error) { const { data } = await sb.from('solicitacoes').select(SEL).eq('id', open.id).single(); abrir(data) }
+  }
+  const soNota = async () => { if (!nota.trim()) return; const { error } = await sb.from('solicitacao_notas').insert({ solicitacao_id: open.id, nota: nota.trim() }); toast(error ? error.message : 'Observação registrada'); abrir(open) }
+  const mail = s => `mailto:${s.profiles.email}?subject=${encodeURIComponent('Sua solicitação de assinatura')}&body=${encodeURIComponent(`Olá, ${s.profiles.nome || ''}! Recebi sua solicitação do plano ${s.plans.nome}. Vamos combinar o pagamento por Pix.`)}`
+  if (!rows) return <div className="sk" />
+  return <>
+    <div className="card"><b>Notificações</b>{!notes.length && <p className="mut">Nenhuma notificação.</p>}
+      {notes.map(n => <div className="row sp" key={n.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--ln)' }}><span style={{ fontWeight: n.lida ? 400 : 700 }}>{!n.lida && '● '}{n.texto} <small className="mut">· {ago(n.created_at)}</small></span>
+        <span className="row">{n.solicitacao_id && <a href="#" onClick={e => { e.preventDefault(); const s = rows.find(r => r.id === n.solicitacao_id); s && abrir(s); marcar(n, true) }}>Abrir</a>}<a href="#" onClick={e => { e.preventDefault(); marcar(n, !n.lida) }}>{n.lida ? 'Marcar como não lida' : 'Marcar como lida'}</a></span></div>)}</div>
+    <h3>Solicitações</h3>
+    {!rows.length ? <div className="card mut">Nenhuma solicitação ainda.</div> : <div style={{ overflowX: 'auto' }}><table><thead><tr><th>Cliente</th><th>Plano</th><th>Valor no pedido</th><th>Estado</th><th>Pedido</th><th /></tr></thead><tbody>{rows.map(s => <tr key={s.id}>
+      <td>{s.profiles?.nome || '—'}<br /><small className="mut">{s.profiles?.email}</small></td><td>{s.plans?.nome}</td><td>R$ {Number(s.preco).toFixed(2)}/{s.periodicidade}</td>
+      <td><span className={'tag' + (s.estado === 'ativa' ? ' ok' : ['recusada', 'cancelada'].includes(s.estado) ? ' bad' : '')}>{LABEL[s.estado]}</span></td><td><small className="mut">{ago(s.created_at)}</small></td><td><button className="g" onClick={() => abrir(s)}>Detalhes</button></td></tr>)}</tbody></table></div>}
+    {open && <div className="ov" onClick={() => setOpen(null)}><div className="card" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+      <h3 style={{ marginTop: 0 }}>{open.plans?.nome} · {LABEL[open.estado]}</h3>
+      <p>{open.profiles?.nome} · <a href={mail(open)}>{open.profiles?.email}</a><br /><small className="mut">O botão abre o seu app de e-mail; o envio não é feito pelo sistema.</small></p>
+      <div className="tl">{hist.ev.map(e => <div className="tli" key={e.id}>{LABEL[e.para]} <small className="mut">· {new Date(e.created_at).toLocaleString('pt-BR')}</small></div>)}</div>
+      {hist.nt.map(n => <p key={n.id} className="mut">📝 {n.nota} <small>· {ago(n.created_at)}</small></p>)}
+      <label>Observação administrativa<textarea rows={2} value={nota} onChange={e => setNota(e.target.value)} /></label>
+      <div className="row">{(NEXT[open.estado] || []).map(est => <button key={est} className={['recusada', 'cancelada'].includes(est) ? 'g' : ''} onClick={() => agir(est)}>{ACAO[est]}</button>)}<button className="g" onClick={soNota}>Só registrar observação</button><button className="g" onClick={() => setOpen(null)}>Fechar</button></div></div></div>}
+  </>
+}
+
 export default function Admin() {
   const { plans, reload, site } = useApp()
   const [tab, setTab] = useState('geral')
@@ -98,7 +139,7 @@ export default function Admin() {
       <h1 style={{ fontSize: '2rem' }}>Área restrita</h1>
       <div className="atabs tabs">{TABS.map(([k, l]) => <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>
       <div style={{ marginTop: 14 }}>
-        {tab === 'geral' && <Geral />}{tab === 'users' && <Users plans={plans} />}{tab === 'planos' && <Planos plans={plans} reload={reload} />}
+        {tab === 'geral' && <Geral />}{tab === 'users' && <Users plans={plans} />}{tab === 'solic' && <Solic />}{tab === 'planos' && <Planos plans={plans} reload={reload} />}
         {tab === 'conteudo' && <Conteudo site={site} reload={reload} />}{tab === 'imagens' && <Imagens site={site} reload={reload} />}
         {tab === 'analytics' && <Analytics />}{tab === 'audit' && <Audit />}
       </div>

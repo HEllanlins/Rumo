@@ -54,3 +54,12 @@ button:active,.btn:active{transform:scale(.97)}.page{animation:pg .28s both}@key
 .nofx .card:hover{background-image:none;transform:none}.nofx .float{animation:none}
 .toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:99px;z-index:30;animation:fd .2s both}
 .atabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}.atabs button{white-space:nowrap}
+/* fase 5 */
+.splash{position:fixed;inset:0;z-index:100;background:radial-gradient(60% 50% at 50% 40%,#16204a,#05070f);display:grid;place-content:center;justify-items:center;gap:14px;color:#e8ecf8;animation:fd .3s both}
+.sp-ring{position:relative;display:grid;place-items:center}.sp-ring img{position:absolute}.rot{transform-origin:60px 60px;animation:spin 3s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.sp-glow{position:absolute;width:420px;height:420px;border-radius:50%;background:radial-gradient(closest-side,rgba(99,102,241,.35),transparent);filter:blur(30px);animation:breathe 4s ease-in-out infinite alternate}
+.orb{position:absolute;border-radius:50%;filter:blur(55px);opacity:.45;pointer-events:none;animation:fl 9s ease-in-out infinite}
+.hero2{perspective:1100px}.hero2 .mock{transform:rotateX(calc(var(--ry,0)*-5deg)) rotateY(calc(var(--rx,0)*7deg));transition:transform .15s ease-out}
+.hero2 .fl{translate:calc(var(--rx,0)*16px) calc(var(--ry,0)*16px);transition:translate .15s ease-out}
+.sel{outline:2px solid var(--ac)}.bar2{position:sticky;bottom:12px;z-index:5}.kbd{border:1px solid var(--ln);border-radius:6px;padding:0 6px;font-family:monospace}
+@media(max-width:700px){.orb{display:none}}

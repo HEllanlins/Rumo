@@ -1,5 +1,13 @@
 # Rumo — passo a passo
 
+## Atualização 6 (fase 5)
+1. Supabase → SQL Editor → New query → cole `supabase/migracao-6.sql` → Run (rode antes as migrações 2 a 5, se ainda não rodou).
+2. Substitua os arquivos do repositório pelos desta pasta e faça commit.
+3. Cliente: menu "Assinatura" (solicitar plano e acompanhar). Admin: aba "Solicitações" (notificações, estados, confirmação manual do Pix e ativação).
+4. Biblioteca: menu "Biblioteca". Atalhos: tecla ? dentro da página.
+5. GitHub privado NÃO está implementado (precisa de uma GitHub App/OAuth App e de funções no servidor).
+
+
 ## Atualização 5 (fase 4)
 1. Supabase → SQL Editor → New query → cole `supabase/migracao-5.sql` → Run (rode antes as migrações 2, 3 e 4, se ainda não rodou).
 2. Substitua os arquivos do repositório pelos desta pasta e faça commit.

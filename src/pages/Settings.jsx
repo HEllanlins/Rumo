@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../App'
 import { sb } from '../supabase'
 import { PRESETS, MODES, FIELDS } from '../theme.jsx'
@@ -17,14 +17,17 @@ export default function Settings() {
   const { theme, setTheme, session } = useApp()
   const ui = theme.ui || {}, vars = theme.vars || {}
   const L = { on: true, int: 0.35, size: 60, anim: false, ...(ui.lights || {}) }
-  const timer = useRef()
-  const apply = t => {
-    setTheme(t); clearTimeout(timer.current)
-    timer.current = setTimeout(async () => {
-      const { error } = await sb.from('user_settings').upsert({ user_id: session.user.id, theme: t })
-      toast(error ? 'Erro ao salvar: ' + error.message : 'Preferências salvas')
-    }, 700)
+  const saved = useRef(theme)
+  const dirty = useRef(false)
+  const [mudou, setMudou] = useState(false)
+  useEffect(() => () => { if (dirty.current) setTheme(saved.current) }, [])
+  const apply = t => { setTheme(t); dirty.current = true; setMudou(true) }
+  const confirmar = async () => {
+    const { error } = await sb.from('user_settings').upsert({ user_id: session.user.id, theme })
+    if (error) return toast('Erro ao salvar: ' + error.message)
+    saved.current = theme; dirty.current = false; setMudou(false); toast('Preferências salvas')
   }
+  const cancelar = () => { setTheme(saved.current); dirty.current = false; setMudou(false); toast('Alterações descartadas') }
   const setVars = v => apply({ ...theme, vars: v })
   const setUi = p => apply({ ...theme, ui: { ...ui, ...p } })
   const setL = p => setUi({ lights: { ...L, ...p } })
@@ -37,7 +40,7 @@ export default function Settings() {
   return (
     <div className="c fade">
       <h2>Configurações</h2>
-      <p className="mut">Valem só para a sua conta e para a área restrita. A landing page mantém a identidade visual institucional. As alterações aparecem na hora e são salvas sozinhas.</p>
+      <p className="mut">Valem só para a sua conta e para a área restrita. A landing page mantém a identidade visual institucional. As alterações são uma pré-visualização: só ficam gravadas quando você clicar em Aplicar e salvar.</p>
       <div className="card"><b>Modo de apresentação</b><div className="row" style={{ marginTop: 10 }}>{Object.keys(MODES).map(n => <button key={n} className={'g' + (ui.mode === n ? ' on' : '')} onClick={() => modo(n)}>{n}</button>)}</div>
         <label><input type="checkbox" checked={ui.fx !== false} onChange={e => setUi({ fx: e.target.checked })} /> Efeitos decorativos (brilho ao passar o mouse e elementos flutuantes)</label></div>
       <div className="card"><b>Combinações de cores</b><div className="row" style={{ marginTop: 10 }}>{Object.keys(PRESETS).map(n => <button key={n} className="g" onClick={() => preset(n)}>{n}</button>)}</div>
@@ -53,6 +56,7 @@ export default function Settings() {
         <label>Zoom da tela ({ui.zoom || 100}%)<input type="range" min="70" max="120" step="5" value={ui.zoom || 100} onChange={e => setUi({ zoom: +e.target.value })} /></label>
         <label>Tamanho da fonte ({ui.font || 16}px)<input type="range" min="12" max="20" value={ui.font || 16} onChange={e => setUi({ font: +e.target.value })} /></label>
         <label>Projetos por linha<select value={ui.cols || 3} onChange={e => setUi({ cols: +e.target.value })}>{[1, 2, 3, 4].map(n => <option key={n}>{n}</option>)}</select></label></div>
-      <button className="g" onClick={() => apply({})}>Restaurar tudo para o padrão</button>
+      <button className="g" onClick={() => apply({})}>Restaurar padrão (pré-visualizar)</button>
+      {mudou && <div className="card bar2 row sp" role="status"><span>Pré-visualização ativa. Nada foi salvo ainda.</span><span className="row"><button className="g" onClick={cancelar}>Cancelar alterações</button><button onClick={confirmar}>Aplicar e salvar</button></span></div>}
     </div>)
 }

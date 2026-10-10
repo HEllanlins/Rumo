@@ -4,7 +4,7 @@ import { sb } from '../supabase'
 import { ThemeToggle } from '../theme.jsx'
 
 const Frame = ({ children }) => (
-  <div className="bg"><div className="c row sp"><Link to="/"><b>Rumo</b></Link><ThemeToggle /></div>
+  <div className="bg"><div className="c row sp"><Link to="/"><span className="row" style={{ gap: 8, flexWrap: 'nowrap' }}><img src="/favicon.svg" alt="" width="28" height="28" /><b>Rumo</b></span></Link><ThemeToggle /></div>
     <form className="card fade" style={{ maxWidth: 420, margin: '40px auto', padding: 28 }} onSubmit={e => e.preventDefault()}>{children}</form></div>)
 
 export default function Auth() {
